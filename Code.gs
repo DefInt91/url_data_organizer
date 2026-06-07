@@ -45,6 +45,10 @@ function doPost(event) {
     return jsonResponse(updateItem(sheet, payload.item || {}));
   }
 
+  if (action === 'update_row') {
+    return jsonResponse(updateRow(sheet, payload.item || {}));
+  }
+
   if (action === 'upsert_item') {
     return jsonResponse(upsertItem(sheet, payload.item || {}));
   }
@@ -86,15 +90,18 @@ function readItems(sheet) {
 
   const values = sheet.getRange(2, 1, lastRow - 1, HEADERS.length).getValues();
   return values
-    .map(rowToItem)
+    .map((row, index) => rowToItem(row, index + 2))
     .filter(item => item.item_id || item.product_name || item.source_url);
 }
 
-function rowToItem(row) {
+function rowToItem(row, rowNumber) {
   const item = {};
   HEADERS.forEach((header, index) => {
     item[header] = normalizeValue(row[index]);
   });
+  if (rowNumber) {
+    item._row_number = rowNumber;
+  }
   return item;
 }
 
@@ -145,6 +152,45 @@ function updateItem(sheet, item) {
   return {
     ok: true,
     action: 'update_item',
+    item: updatedItem
+  };
+}
+
+function updateRow(sheet, item) {
+  const rowIndex = Number(item._row_number || item.row_number);
+  if (!rowIndex || rowIndex < 2 || rowIndex > sheet.getLastRow()) {
+    return {
+      ok: false,
+      error: 'Valid _row_number is required'
+    };
+  }
+
+  const currentItem = rowToItem(sheet.getRange(rowIndex, 1, 1, HEADERS.length).getValues()[0], rowIndex);
+  if (item.item_id && currentItem.item_id !== item.item_id) {
+    return {
+      ok: false,
+      error: 'item_id mismatch'
+    };
+  }
+
+  if (item.source_url && currentItem.source_url !== item.source_url) {
+    return {
+      ok: false,
+      error: 'source_url mismatch'
+    };
+  }
+
+  const updatedItem = Object.assign({}, currentItem, item, {
+    updated_at: item.updated_at || new Date().toISOString()
+  });
+  delete updatedItem._row_number;
+
+  sheet.getRange(rowIndex, 1, 1, HEADERS.length).setValues([itemToRow(updatedItem)]);
+  updatedItem._row_number = rowIndex;
+
+  return {
+    ok: true,
+    action: 'update_row',
     item: updatedItem
   };
 }

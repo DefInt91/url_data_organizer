@@ -109,13 +109,14 @@ Follow this order:
    - Fetch Sheet rows through Apps Script.
    - Pending rows usually have `notes = pending_url_review`, `product_name_zh = 待分析`, or placeholder product fields.
 
-2. **Check duplicate source URLs before writing**
+2. **Check pending duplicate source URLs before writing**
    - Group all rows by `source_url`.
-   - If any pending URL already appears in another row, stop before writing changes for that URL.
-   - Report the duplicate group to the user with `source_url`, `item_id`, `status`, `product_name_zh`, and `notes`.
+   - Do not treat a normal multi-product URL as a problem when each row is already analyzed.
+   - Only flag rows that are still pending (`pending_url_review`, `待分析`, or `Pending review`) and share a `source_url` with another row.
+   - Report the pending duplicate row with `source_url`, `_row_number`, `item_id`, `status`, `product_name_zh`, and `notes`.
    - Do not overwrite rows with user-managed statuses such as `want`, `bought`, `skipped`, or `deleted`.
    - Do not clean duplicate pending rows automatically. Ask the user what to do.
-   - The dashboard may show duplicate warnings without changing Sheet data; treat that as the preferred first step.
+   - The dashboard marks only duplicate pending cards; it should not show a broad duplicate warning for normal multi-product URLs.
 
 3. **Extract public metadata**
    - Prefer `yt-dlp --skip-download --dump-json --no-playlist URL`.
@@ -216,15 +217,19 @@ If content requires video/audio/frame analysis:
 
 Use `upsert_item` when adding or replacing analyzed product rows.
 
-Use `update_item` when updating an existing row's status, notes, usage, summary, confidence, or product fields.
+Use `update_row` when updating an existing row's status, notes, usage, summary, confidence, or product fields if `_row_number` is available. This prevents duplicate `item_id` rows from updating the wrong row.
+
+Use `update_item` only as a fallback when `_row_number` is not available.
 
 Example payload:
 
 ```json
 {
-  "action": "update_item",
+  "action": "update_row",
   "item": {
+    "_row_number": 12,
     "item_id": "url-instagram-example-product",
+    "source_url": "https://www.instagram.com/reel/example/",
     "product_name": "Example Product",
     "product_name_zh": "Example Product 用途描述",
     "usage_zh": "用於整理、清潔或戶外使用。",
@@ -243,8 +248,8 @@ Always read back after writing and report the rows updated.
 Before final response:
 
 - Pending URLs were identified or user-provided URLs were listed.
-- Duplicate `source_url` groups were checked before any writes.
-- If duplicates existed, they were reported and not overwritten unless the user explicitly confirmed the action.
+- Pending duplicate `source_url` rows were checked before any writes.
+- If pending duplicates existed, they were reported and not overwritten unless the user explicitly confirmed the action.
 - Public metadata was attempted first.
 - Product-page search was used when suspected names had unclear usage.
 - Multi-product URLs were split into separate rows.

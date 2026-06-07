@@ -260,46 +260,6 @@
       text-transform: uppercase;
     }
 
-    .duplicatePanel {
-      display: none;
-      margin-bottom: 16px;
-      border: 2px solid var(--line);
-      border-left: 10px solid var(--red);
-      border-radius: 8px;
-      padding: 12px;
-      background: #ffe5dc;
-    }
-
-    .duplicatePanel.active {
-      display: block;
-    }
-
-    .duplicatePanel h3 {
-      margin-bottom: 8px;
-      font-size: 1rem;
-    }
-
-    .duplicateList {
-      display: grid;
-      gap: 8px;
-      margin: 0;
-      padding: 0;
-      list-style: none;
-    }
-
-    .duplicateList li {
-      display: grid;
-      gap: 6px;
-      border-top: 1px solid rgba(21, 21, 18, 0.2);
-      padding-top: 8px;
-    }
-
-    .duplicateUrl {
-      color: var(--red);
-      font-weight: 900;
-      overflow-wrap: anywhere;
-    }
-
     .filters {
       display: grid;
       grid-template-columns: minmax(220px, 1fr) 180px 180px auto;
@@ -659,11 +619,6 @@
 
           <div class="statsGrid" id="statsGrid"></div>
 
-          <section class="duplicatePanel" id="duplicatePanel" aria-live="polite">
-            <h3>Duplicate URLs detected</h3>
-            <ul class="duplicateList" id="duplicateList"></ul>
-          </section>
-
           <div class="urlInbox" aria-label="新增待分析 URL">
             <label for="urlInput">
               Add URL inbox
@@ -765,8 +720,6 @@
       currentStoreTitle: document.querySelector("#currentStoreTitle"),
       currentStoreSubtitle: document.querySelector("#currentStoreSubtitle"),
       statsGrid: document.querySelector("#statsGrid"),
-      duplicatePanel: document.querySelector("#duplicatePanel"),
-      duplicateList: document.querySelector("#duplicateList"),
       urlInput: document.querySelector("#urlInput"),
       addUrlsButton: document.querySelector("#addUrlsButton"),
       searchInput: document.querySelector("#searchInput"),
@@ -802,6 +755,20 @@
 
     function isDeleted(item) {
       return (item.status || "").toLowerCase() === "deleted";
+    }
+
+    function getRowKey(item) {
+      return item._row_number
+        ? `row-${item._row_number}`
+        : `item-${item.item_id || item.source_url || item.product_name || crypto.randomUUID()}`;
+    }
+
+    function isPendingItem(item) {
+      return (
+        (item.notes || "").includes("pending_url_review") ||
+        item.product_name_zh === "待分析" ||
+        item.product_name === "Pending review"
+      );
     }
 
     function getBoardGroups() {
@@ -874,6 +841,12 @@
       return [...groups.entries()]
         .filter(([, items]) => items.length > 1)
         .sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));
+    }
+
+    function isDuplicatePending(item) {
+      if (!isPendingItem(item) || !item.source_url) return false;
+      const sameUrlItems = appState.items.filter((entry) => entry.source_url === item.source_url);
+      return sameUrlItems.length > 1;
     }
 
     function extractUrls(value) {
@@ -1039,31 +1012,6 @@
       });
     }
 
-    function renderDuplicateWarning() {
-      const duplicates = getDuplicateGroups();
-      elements.duplicatePanel.classList.toggle("active", duplicates.length > 0);
-      elements.duplicateList.innerHTML = "";
-
-      duplicates.forEach(([sourceUrl, items]) => {
-        const row = document.createElement("li");
-        const itemSummary = items
-          .map((item) => {
-            const label = item.product_name_zh || item.product_name || "Unnamed item";
-            return `<span class="tag">${escapeHtml(item.status || "to_review")} / ${escapeHtml(label)} / ${escapeHtml(item.item_id || "")}</span>`;
-          })
-          .join("");
-
-        row.innerHTML = `
-          <span class="duplicateUrl">${escapeHtml(sourceUrl)}</span>
-          <div class="metaLine">
-            <span class="tag">${items.length} rows</span>
-            ${itemSummary}
-          </div>
-        `;
-        elements.duplicateList.appendChild(row);
-      });
-    }
-
     function renderBoard(items) {
       elements.board.innerHTML = "";
       getBoardGroups().forEach((group) => {
@@ -1091,10 +1039,12 @@
 
     function createItemCard(item) {
       const card = document.createElement("article");
-      const itemId = item.item_id || item.source_url || item.product_name || crypto.randomUUID();
-      const isExpanded = appState.expandedItems.has(itemId);
+      const rowKey = getRowKey(item);
+      const itemId = item.item_id || rowKey;
+      const isExpanded = appState.expandedItems.has(rowKey);
       const positionTag = getItemPositionTag(item);
       const visibleNotes = getUserNotes(item.notes);
+      const duplicatePendingTag = isDuplicatePending(item);
       card.className = "itemCard";
       card.dataset.confidence = item.confidence || "medium";
       const sourceLink = item.source_url
@@ -1121,6 +1071,7 @@
           <span class="tag">${escapeHtml(item.platform || "Unknown")}</span>
           <span class="tag">${escapeHtml(item.confidence || "medium")}</span>
           ${positionTag ? `<span class="tag">${escapeHtml(positionTag)}</span>` : ""}
+          ${duplicatePendingTag ? `<span class="tag">Duplicate pending URL</span>` : ""}
         </div>
         <div class="cardDetails" ${isExpanded ? "" : "hidden"}>
           <p class="usageText">${escapeHtml(item.usage_zh || "尚未整理用途。")}</p>
@@ -1134,20 +1085,20 @@
             ${sourceLink}
           </div>
           <div class="noteBox">
-            <label for="notes-${escapeAttribute(itemId)}">Notes</label>
-            <textarea id="notes-${escapeAttribute(itemId)}" data-note-id="${escapeAttribute(itemId)}">${escapeHtml(visibleNotes)}</textarea>
+            <label for="notes-${escapeAttribute(rowKey)}">Notes</label>
+            <textarea id="notes-${escapeAttribute(rowKey)}" data-note-key="${escapeAttribute(rowKey)}">${escapeHtml(visibleNotes)}</textarea>
           </div>
         </div>
         <div class="cardFooter">
-          <select class="smallSelect" data-item-id="${escapeAttribute(itemId)}" aria-label="更新狀態">
+          <select class="smallSelect" data-row-key="${escapeAttribute(rowKey)}" aria-label="更新狀態">
             ${statusOptions}
           </select>
           <div class="cardActions">
-            <button class="smallButton saveNoteButton" type="button" data-item-id="${escapeAttribute(itemId)}">Save note</button>
+            <button class="smallButton saveNoteButton" type="button" data-row-key="${escapeAttribute(rowKey)}">Save note</button>
             ${
               isDeleted(item)
-                ? `<button class="smallButton restoreButton" type="button" data-item-id="${escapeAttribute(itemId)}">Restore</button>`
-                : `<button class="smallButton dangerButton deleteButton" type="button" data-item-id="${escapeAttribute(itemId)}">Delete</button>`
+                ? `<button class="smallButton restoreButton" type="button" data-row-key="${escapeAttribute(rowKey)}">Restore</button>`
+                : `<button class="smallButton dangerButton deleteButton" type="button" data-row-key="${escapeAttribute(rowKey)}">Delete</button>`
             }
           </div>
         </div>
@@ -1159,47 +1110,51 @@
       const deleteButton = card.querySelector(".deleteButton");
       const restoreButton = card.querySelector(".restoreButton");
       toggleButton.addEventListener("click", () => {
-        if (appState.expandedItems.has(itemId)) {
-          appState.expandedItems.delete(itemId);
+        if (appState.expandedItems.has(rowKey)) {
+          appState.expandedItems.delete(rowKey);
         } else {
-          appState.expandedItems.add(itemId);
+          appState.expandedItems.add(rowKey);
         }
         render();
       });
-      statusSelect.addEventListener("change", () => updateStatus(itemId, statusSelect.value));
-      saveNoteButton.addEventListener("click", () => saveNote(itemId, card));
-      if (deleteButton) deleteButton.addEventListener("click", () => softDeleteItem(itemId));
-      if (restoreButton) restoreButton.addEventListener("click", () => restoreItem(itemId));
+      statusSelect.addEventListener("change", () => updateStatus(rowKey, statusSelect.value));
+      saveNoteButton.addEventListener("click", () => saveNote(rowKey, card));
+      if (deleteButton) deleteButton.addEventListener("click", () => softDeleteItem(rowKey));
+      if (restoreButton) restoreButton.addEventListener("click", () => restoreItem(rowKey));
       return card;
     }
 
-    async function updateStatus(itemId, status) {
-      await updateItemFields(itemId, { status });
+    async function updateStatus(rowKey, status) {
+      await updateItemFields(rowKey, { status });
     }
 
-    async function saveNote(itemId, card) {
-      const item = appState.items.find((entry) => entry.item_id === itemId);
+    async function saveNote(rowKey, card) {
+      const item = findItemByRowKey(rowKey);
       if (!item) return;
 
-      const noteInput = card.querySelector(`[data-note-id="${CSS.escape(itemId)}"]`);
+      const noteInput = card.querySelector(`[data-note-key="${CSS.escape(rowKey)}"]`);
       const systemNotes = splitNotes(item.notes).system;
       const nextNotes = mergeNotes(systemNotes, noteInput ? noteInput.value : "");
-      await updateItemFields(itemId, { notes: nextNotes });
+      await updateItemFields(rowKey, { notes: nextNotes });
       setSourceStatus("Note saved", "ready");
     }
 
-    async function softDeleteItem(itemId) {
-      await updateItemFields(itemId, { status: "deleted" });
+    async function softDeleteItem(rowKey) {
+      await updateItemFields(rowKey, { status: "deleted" });
       setSourceStatus("Deleted", "ready");
     }
 
-    async function restoreItem(itemId) {
-      await updateItemFields(itemId, { status: "to_review" });
+    async function restoreItem(rowKey) {
+      await updateItemFields(rowKey, { status: "to_review" });
       setSourceStatus("Restored", "ready");
     }
 
-    async function updateItemFields(itemId, fields) {
-      const item = appState.items.find((entry) => entry.item_id === itemId);
+    function findItemByRowKey(rowKey) {
+      return appState.items.find((entry) => getRowKey(entry) === rowKey);
+    }
+
+    async function updateItemFields(rowKey, fields) {
+      const item = findItemByRowKey(rowKey);
       if (!item) return;
 
       Object.assign(item, fields, { updated_at: new Date().toISOString() });
@@ -1207,13 +1162,16 @@
 
       if (!API_URL) return;
 
+      const action = item._row_number ? "update_row" : "update_item";
       await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify({
-          action: "update_item",
+          action,
           item: {
-            item_id: itemId,
+            _row_number: item._row_number,
+            item_id: item.item_id,
+            source_url: item.source_url,
             ...fields,
             updated_at: item.updated_at,
           },
@@ -1277,7 +1235,6 @@
       renderFilters();
       renderHeader(items);
       renderStats(items);
-      renderDuplicateWarning();
       renderBoard(items);
     }
 
