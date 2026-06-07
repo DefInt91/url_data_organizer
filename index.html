@@ -1,96 +1,1215 @@
 <!doctype html>
-<html lang="zh-Hant">
+<html lang="zh-TW">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>URL Data Organizer</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WishList Dashboard</title>
+  <style>
+    :root {
+      --paper: #f8f1e3;
+      --paper-strong: #eadac0;
+      --ink: #151512;
+      --muted: #6f6659;
+      --line: #151512;
+      --green: #447c53;
+      --blue: #3e88a3;
+      --red: #b94e3d;
+      --yellow: #e8bd4f;
+      --pink: #d98793;
+      --white: #fffaf0;
+      --shadow: 8px 8px 0 #151512;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      background:
+        linear-gradient(130deg, rgba(68, 124, 83, 0.2), transparent 32%),
+        linear-gradient(310deg, rgba(62, 136, 163, 0.22), transparent 36%),
+        var(--paper);
+      color: var(--ink);
+      font-family: "Aptos", "Segoe UI", "Microsoft JhengHei", sans-serif;
+    }
+
+    body::before {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      content: "";
+      background-image:
+        linear-gradient(rgba(21, 21, 18, 0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(21, 21, 18, 0.045) 1px, transparent 1px);
+      background-size: 30px 30px;
+      mask-image: linear-gradient(to bottom, black, transparent 86%);
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    .appShell {
+      position: relative;
+      z-index: 1;
+      width: min(1500px, 100%);
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 22px;
+    }
+
+    .dashboard {
+      min-height: calc(100vh - 44px);
+      border: 2px solid var(--line);
+      border-radius: 8px;
+      background: rgba(248, 241, 227, 0.92);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .topBar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 18px;
+      align-items: center;
+      padding: 24px;
+      border-bottom: 2px solid var(--line);
+      background: var(--paper-strong);
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--red);
+      font-family: "Cascadia Mono", "Consolas", monospace;
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
+    h1 {
+      margin-bottom: 0;
+      font-family: "Georgia", "Times New Roman", serif;
+      font-size: 4rem;
+      line-height: 0.95;
+    }
+
+    .topActions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .statusPill {
+      min-width: 138px;
+      border: 2px solid var(--line);
+      border-radius: 999px;
+      padding: 10px 14px;
+      background: var(--yellow);
+      font-family: "Cascadia Mono", "Consolas", monospace;
+      font-size: 0.82rem;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .statusPill[data-state="ready"] {
+      background: #80c991;
+    }
+
+    .statusPill[data-state="error"] {
+      background: var(--red);
+      color: #fffaf0;
+    }
+
+    button,
+    .linkButton {
+      min-height: 42px;
+      border: 2px solid var(--line);
+      border-radius: 6px;
+      padding: 0 14px;
+      background: var(--white);
+      color: var(--ink);
+      cursor: pointer;
+      font-weight: 900;
+      text-decoration: none;
+      transition: transform 140ms ease, box-shadow 140ms ease;
+    }
+
+    button:hover,
+    .linkButton:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 5px 5px 0 var(--line);
+    }
+
+    .primaryButton {
+      background: var(--ink);
+      color: var(--white);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
+      min-height: 760px;
+    }
+
+    .storeRail {
+      border-right: 2px solid var(--line);
+      background: rgba(234, 218, 192, 0.72);
+      padding: 18px;
+    }
+
+    .contentArea {
+      padding: 20px;
+    }
+
+    .sectionHeader {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-end;
+      margin-bottom: 16px;
+    }
+
+    h2 {
+      margin-bottom: 4px;
+      font-family: "Georgia", "Times New Roman", serif;
+      font-size: 1.8rem;
+      line-height: 1;
+    }
+
+    .sectionHeader p {
+      margin-bottom: 0;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .storeList {
+      display: grid;
+      gap: 8px;
+    }
+
+    .storeButton {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      width: 100%;
+      align-items: center;
+      text-align: left;
+      background: var(--white);
+    }
+
+    .storeButton.active {
+      background: var(--ink);
+      color: var(--white);
+      box-shadow: 4px 4px 0 var(--line);
+    }
+
+    .countBadge {
+      display: inline-grid;
+      place-items: center;
+      min-width: 28px;
+      height: 28px;
+      border: 2px solid currentColor;
+      border-radius: 999px;
+      padding: 0 7px;
+      font-family: "Cascadia Mono", "Consolas", monospace;
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+
+    .statsGrid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .statBox {
+      border: 2px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: var(--white);
+    }
+
+    .statValue {
+      display: block;
+      font-family: "Georgia", "Times New Roman", serif;
+      font-size: 2rem;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .statLabel {
+      color: var(--muted);
+      font-family: "Cascadia Mono", "Consolas", monospace;
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .filters {
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) 180px 180px auto;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .toggleControl {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      min-height: 42px;
+      border: 2px solid var(--line);
+      border-radius: 6px;
+      padding: 0 12px;
+      background: var(--white);
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .toggleControl input {
+      width: 18px;
+      min-height: 18px;
+      accent-color: var(--ink);
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      min-height: 42px;
+      border: 2px solid var(--line);
+      border-radius: 6px;
+      background: var(--white);
+      color: var(--ink);
+      outline: none;
+      padding: 0 12px;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      box-shadow: 0 0 0 4px rgba(62, 136, 163, 0.25);
+    }
+
+    textarea {
+      min-height: 92px;
+      padding: 12px;
+      resize: vertical;
+      line-height: 1.45;
+    }
+
+    .urlInbox {
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) auto;
+      gap: 10px;
+      align-items: end;
+      margin-bottom: 16px;
+      border: 2px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: rgba(255, 250, 240, 0.72);
+    }
+
+    .urlInbox label {
+      display: grid;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 900;
+    }
+
+    .urlInbox button {
+      min-width: 128px;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(220px, 1fr));
+      gap: 12px;
+      overflow-x: auto;
+      padding-bottom: 6px;
+    }
+
+    .statusColumn {
+      min-height: 420px;
+      border: 2px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 250, 240, 0.72);
+      overflow: hidden;
+    }
+
+    .columnHeader {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+      min-height: 48px;
+      padding: 10px 12px;
+      border-bottom: 2px solid var(--line);
+      background: var(--paper-strong);
+      font-weight: 900;
+    }
+
+    .columnBody {
+      display: grid;
+      gap: 10px;
+      padding: 10px;
+    }
+
+    .itemCard {
+      border: 2px solid var(--line);
+      border-radius: 8px;
+      background: var(--white);
+      padding: 12px;
+    }
+
+    .itemCard[data-confidence="high"] {
+      border-left: 10px solid var(--green);
+    }
+
+    .itemCard[data-confidence="medium"] {
+      border-left: 10px solid var(--yellow);
+    }
+
+    .itemCard[data-confidence="low"] {
+      border-left: 10px solid var(--pink);
+    }
+
+    .cardTop {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .cardMain {
+      min-width: 0;
+    }
+
+    .cardTitleRow {
+      display: grid;
+      grid-template-columns: 32px minmax(0, 1fr);
+      gap: 8px;
+      align-items: start;
+    }
+
+    .toggleButton {
+      display: inline-grid;
+      place-items: center;
+      width: 32px;
+      min-width: 32px;
+      height: 32px;
+      min-height: 32px;
+      padding: 0;
+      border-radius: 999px;
+      background: var(--ink);
+      color: var(--white);
+      font-family: "Cascadia Mono", "Consolas", monospace;
+      font-size: 1.05rem;
+      line-height: 1;
+    }
+
+    .productName {
+      margin: 0;
+      font-size: 1rem;
+      line-height: 1.25;
+      overflow-wrap: anywhere;
+    }
+
+    .priceTag {
+      flex: 0 0 auto;
+      border: 2px solid var(--line);
+      border-radius: 999px;
+      padding: 4px 8px;
+      background: var(--yellow);
+      font-size: 0.78rem;
+      font-weight: 900;
+    }
+
+    .metaLine {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 8px 0;
+    }
+
+    .tag {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 3px 7px;
+      color: var(--muted);
+      font-size: 0.76rem;
+      font-weight: 800;
+    }
+
+    .usageText,
+    .summaryText {
+      margin-bottom: 8px;
+      color: var(--muted);
+      line-height: 1.5;
+      overflow-wrap: anywhere;
+    }
+
+    .cardDetails {
+      margin-top: 10px;
+    }
+
+    .cardDetails[hidden] {
+      display: none;
+    }
+
+    .noteBox {
+      display: grid;
+      gap: 8px;
+      margin: 10px 0;
+    }
+
+    .noteBox label {
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 900;
+    }
+
+    .cardFooter {
+      display: flex;
+      gap: 8px;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid rgba(21, 21, 18, 0.18);
+      padding-top: 9px;
+    }
+
+    .cardActions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .sourceLink {
+      color: var(--blue);
+      font-weight: 900;
+      text-decoration: none;
+    }
+
+    .smallSelect {
+      width: auto;
+      min-height: 34px;
+      padding: 0 8px;
+      font-size: 0.82rem;
+    }
+
+    .smallButton {
+      min-height: 34px;
+      padding: 0 10px;
+      font-size: 0.82rem;
+    }
+
+    .dangerButton {
+      background: var(--red);
+      color: var(--white);
+    }
+
+    .emptyState {
+      border: 2px dashed rgba(21, 21, 18, 0.32);
+      border-radius: 8px;
+      padding: 18px;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 1100px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .storeRail {
+        border-right: 0;
+        border-bottom: 2px solid var(--line);
+      }
+
+      .storeList {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .statsGrid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 720px) {
+      .appShell {
+        padding: 12px;
+      }
+
+      .topBar,
+      .sectionHeader,
+      .urlInbox,
+      .filters {
+        grid-template-columns: 1fr;
+      }
+
+      .topBar {
+        align-items: start;
+      }
+
+      h1 {
+        font-size: 2.5rem;
+      }
+
+      .storeList,
+      .statsGrid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
 <body>
-  <main class="app-shell">
-    <section class="workspace-panel" aria-labelledby="app-title">
-      <header class="topbar">
+  <main class="appShell">
+    <section class="dashboard" aria-labelledby="appTitle">
+      <header class="topBar">
         <div>
-          <p class="eyebrow">URL INSPECTION DESK</p>
-          <h1 id="app-title">URL Data Organizer</h1>
+          <p class="eyebrow">GOOGLE SHEET PURCHASE BOARD</p>
+          <h1 id="appTitle">WishList Dashboard</h1>
         </div>
-        <div class="status-pill" id="status-pill" aria-live="polite">Ready</div>
+        <div class="topActions">
+          <div class="statusPill" id="sourceStatus" data-state="loading">Loading</div>
+          <button class="primaryButton" id="refreshButton" type="button">Refresh</button>
+        </div>
       </header>
 
-      <div class="input-grid">
-        <section class="source-panel" aria-labelledby="source-title">
-          <div class="section-heading">
-            <span class="heading-mark"></span>
+      <div class="layout">
+        <aside class="storeRail" aria-label="商店列表">
+          <div class="sectionHeader">
             <div>
-              <h2 id="source-title">Source</h2>
-              <p>貼上 URL，或在抓取失敗時改貼頁面文字。</p>
+              <h2>Stores</h2>
+              <p>相同商店會歸納在一起。</p>
             </div>
           </div>
+          <div class="storeList" id="storeList"></div>
+        </aside>
 
-          <label class="field-label" for="source-url">URL</label>
-          <div class="url-row">
-            <input id="source-url" type="url" placeholder="https://example.com/product-page">
-            <button class="icon-button" id="fetch-button" type="button" title="Fetch URL" aria-label="Fetch URL">
-              <span aria-hidden="true">↗</span>
-            </button>
-          </div>
-
-          <label class="field-label" for="source-text">Page text</label>
-          <textarea id="source-text" spellcheck="false" placeholder="抓取失敗時，把頁面內容貼在這裡。"></textarea>
-
-          <div class="action-row">
-            <button class="primary-button" id="analyze-button" type="button">整理重點</button>
-            <button class="ghost-button" id="clear-button" type="button">清空</button>
-          </div>
-        </section>
-
-        <section class="result-panel" aria-labelledby="result-title">
-          <div class="section-heading">
-            <span class="heading-mark alt"></span>
+        <section class="contentArea" aria-label="購物清單內容">
+          <div class="sectionHeader">
             <div>
-              <h2 id="result-title">Extracted Data</h2>
-              <p>輸出可直接複製到筆記或任務描述。</p>
+              <h2 id="currentStoreTitle">All Stores</h2>
+              <p id="currentStoreSubtitle">從 Google Sheet WishList 讀取資料。</p>
             </div>
+            <a class="linkButton" href="https://docs.google.com/spreadsheets/d/14SOy9cYWMA9u0F-f2co5nEEDJvF94CAuXNx9ETLR3no/edit" target="_blank" rel="noreferrer">Open Sheet</a>
           </div>
 
-          <div class="summary-box">
-            <span class="box-label">Summary</span>
-            <p id="summary-output">等待輸入資料。</p>
+          <div class="statsGrid" id="statsGrid"></div>
+
+          <div class="urlInbox" aria-label="新增待分析 URL">
+            <label for="urlInput">
+              Add URL inbox
+              <textarea id="urlInput" placeholder="貼上單個或多個 URL，一行一個。"></textarea>
+            </label>
+            <button class="primaryButton" id="addUrlsButton" type="button">Add URLs</button>
           </div>
 
-          <div class="data-grid">
-            <article class="data-card">
-              <h3>Locations</h3>
-              <ul id="locations-output"></ul>
-            </article>
-            <article class="data-card">
-              <h3>Products</h3>
-              <ul id="products-output"></ul>
-            </article>
-            <article class="data-card">
-              <h3>Prices</h3>
-              <ul id="prices-output"></ul>
-            </article>
-            <article class="data-card">
-              <h3>Uses</h3>
-              <ul id="uses-output"></ul>
-            </article>
+          <div class="filters">
+            <input id="searchInput" type="search" placeholder="搜尋商品、用途、店家、來源">
+            <select id="platformFilter">
+              <option value="all">All platforms</option>
+            </select>
+            <select id="confidenceFilter">
+              <option value="all">All confidence</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+            <label class="toggleControl" for="showDeletedToggle">
+              <input id="showDeletedToggle" type="checkbox">
+              Show deleted
+            </label>
           </div>
 
-          <div class="json-panel">
-            <div class="json-header">
-              <span>Structured JSON</span>
-              <button class="icon-button small" id="copy-button" type="button" title="Copy JSON" aria-label="Copy JSON">
-                <span aria-hidden="true">□</span>
-              </button>
-            </div>
-            <pre id="json-output">{}</pre>
-          </div>
+          <div class="board" id="board"></div>
         </section>
       </div>
     </section>
   </main>
 
-  <script src="script.js"></script>
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbw2Af7quD5TFMXxw5P3ziSzlr1JPTkcu0ES8grYdyAUeWbR268BIoaIv_qVc0rLpDTU3g/exec";
+    const STATUS_GROUPS = [
+      { id: "to_review", label: "To Review" },
+      { id: "want", label: "Want" },
+      { id: "compare", label: "Compare" },
+      { id: "bought", label: "Bought" },
+      { id: "skipped", label: "Skipped" },
+    ];
+    const UNKNOWN_STORE = "Unknown Store";
+
+    const demoItems = [
+      {
+        item_id: "demo-daiso-cupholder",
+        status: "to_review",
+        product_name: "2IN1車載ドリンクホルダー",
+        product_name_zh: "2 合 1 車用飲料架",
+        store: "DAISO",
+        price: "¥330",
+        currency: "JPY",
+        product_code: "4550480785073",
+        usage_zh: "把車上單一杯架擴充成兩個，可放飲料與手機。",
+        summary_zh: "短影音介紹大創車用杯架擴充配件，適合整理車內飲料與手機。",
+        source_url: "https://www.facebook.com/reel/1016337091337261",
+        platform: "Facebook",
+        creator: "100均チャンネル",
+        confidence: "high",
+        notes: "",
+        created_at: "2026-06-06T00:00:00+08:00",
+        updated_at: "2026-06-06T00:00:00+08:00",
+      },
+      {
+        item_id: "demo-cooling-cap",
+        status: "skipped",
+        product_name: "COOLING CAP",
+        product_name_zh: "腋下冷卻概念裝置",
+        store: "Concept",
+        price: "",
+        currency: "",
+        product_code: "",
+        usage_zh: "概念影片描述控制衣服內溫度、濕度與氣味。",
+        summary_zh: "此項目看起來是 AI 製作的虛構概念產品，適合保留但不列入購買。",
+        source_url: "https://www.instagram.com/reel/DYy9sKspdub/",
+        platform: "Instagram",
+        creator: "404product",
+        confidence: "medium",
+        notes: "AI concept",
+        created_at: "2026-06-06T00:00:00+08:00",
+        updated_at: "2026-06-06T00:00:00+08:00",
+      },
+    ];
+
+    const appState = {
+      items: [],
+      selectedStore: "all",
+      search: "",
+      platform: "all",
+      confidence: "all",
+      showDeleted: false,
+      demoMode: false,
+      expandedItems: new Set(),
+    };
+
+    const elements = {
+      sourceStatus: document.querySelector("#sourceStatus"),
+      refreshButton: document.querySelector("#refreshButton"),
+      storeList: document.querySelector("#storeList"),
+      currentStoreTitle: document.querySelector("#currentStoreTitle"),
+      currentStoreSubtitle: document.querySelector("#currentStoreSubtitle"),
+      statsGrid: document.querySelector("#statsGrid"),
+      urlInput: document.querySelector("#urlInput"),
+      addUrlsButton: document.querySelector("#addUrlsButton"),
+      searchInput: document.querySelector("#searchInput"),
+      platformFilter: document.querySelector("#platformFilter"),
+      confidenceFilter: document.querySelector("#confidenceFilter"),
+      showDeletedToggle: document.querySelector("#showDeletedToggle"),
+      board: document.querySelector("#board"),
+    };
+
+    function normalizeStore(value) {
+      return value && value.trim() ? value.trim() : UNKNOWN_STORE;
+    }
+
+    function getPriceText(item) {
+      if (item.price && item.currency && !item.price.includes(item.currency)) {
+        return `${item.price} ${item.currency}`;
+      }
+      return item.price || "No price";
+    }
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function escapeAttribute(value) {
+      return escapeHtml(value).replace(/`/g, "&#096;");
+    }
+
+    function isDeleted(item) {
+      return (item.status || "").toLowerCase() === "deleted";
+    }
+
+    function getBoardGroups() {
+      return appState.showDeleted
+        ? [...STATUS_GROUPS, { id: "deleted", label: "Deleted" }]
+        : STATUS_GROUPS;
+    }
+
+    function getItemPositionTag(item) {
+      const notes = String(item.notes || "");
+      const itemMatch = notes.match(/item_(\d+)_of_(\d+)/i);
+      if (itemMatch) return `#${itemMatch[1]}/${itemMatch[2]}`;
+
+      const rankMatch = notes.match(/rank_(\d+)/i);
+      if (rankMatch) return `#${rankMatch[1]}`;
+
+      return "";
+    }
+
+    function splitNotes(value) {
+      const systemPatterns = [
+        /^analyzed_by_codex$/i,
+        /^pending_url_review$/i,
+        /^item_\d+_of_\d+$/i,
+        /^rank_\d+$/i,
+        /^usage_needs_product_page_check$/i,
+        /^exact_product_name_needs_room_check$/i,
+      ];
+      const parts = String(value || "")
+        .split(";")
+        .map((part) => part.trim())
+        .filter(Boolean);
+      const system = [];
+      const user = [];
+
+      parts.forEach((part) => {
+        if (systemPatterns.some((pattern) => pattern.test(part))) {
+          system.push(part);
+        } else {
+          user.push(part);
+        }
+      });
+
+      return { system, user };
+    }
+
+    function getUserNotes(value) {
+      return splitNotes(value).user.join("; ");
+    }
+
+    function mergeNotes(systemNotes, userNotes) {
+      return [...systemNotes, String(userNotes || "").trim()]
+        .filter(Boolean)
+        .join("; ");
+    }
+
+    function extractUrls(value) {
+      const matches = String(value || "").match(/https?:\/\/[^\s<>"']+/g) || [];
+      return [...new Set(matches.map((url) => url.replace(/[),.;]+$/g, "")))];
+    }
+
+    function getPlatformFromUrl(url) {
+      const normalizedUrl = url.toLowerCase();
+      if (normalizedUrl.includes("facebook.com") || normalizedUrl.includes("fb.watch")) return "Facebook";
+      if (normalizedUrl.includes("instagram.com")) return "Instagram";
+      if (normalizedUrl.includes("youtube.com") || normalizedUrl.includes("youtu.be")) return "YouTube";
+      if (normalizedUrl.includes("tiktok.com")) return "TikTok";
+      return "Unknown";
+    }
+
+    function getItemIdFromUrl(url) {
+      return `pending-${url.toLowerCase().replace(/^https?:\/\//, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 90)}`;
+    }
+
+    function createPendingItem(url) {
+      const now = new Date().toISOString();
+      return {
+        item_id: getItemIdFromUrl(url),
+        status: "to_review",
+        store: UNKNOWN_STORE,
+        product_name: "Pending review",
+        product_name_zh: "待分析",
+        price: "",
+        currency: "",
+        product_code: "",
+        usage_zh: "尚未分析用途。",
+        summary_zh: "已加入待分析清單；通知 Codex 後會補上商品資訊。",
+        source_url: url,
+        platform: getPlatformFromUrl(url),
+        creator: "",
+        confidence: "low",
+        notes: "pending_url_review",
+        created_at: now,
+        updated_at: now,
+      };
+    }
+
+    function setSourceStatus(text, state) {
+      elements.sourceStatus.textContent = text;
+      elements.sourceStatus.dataset.state = state;
+    }
+
+    async function loadItems() {
+      if (!API_URL) {
+        appState.items = demoItems;
+        appState.demoMode = true;
+        setSourceStatus("Demo data", "ready");
+        render();
+        return;
+      }
+
+      setSourceStatus("Loading", "loading");
+
+      try {
+        const response = await fetch(API_URL, { method: "GET" });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        const data = await response.json();
+        appState.items = Array.isArray(data.items) ? data.items : [];
+        appState.demoMode = false;
+        setSourceStatus("Sheet ready", "ready");
+      } catch (error) {
+        appState.items = demoItems;
+        appState.demoMode = true;
+        setSourceStatus("API error", "error");
+      }
+
+      render();
+    }
+
+    function getFilteredItems() {
+      const keyword = appState.search.toLowerCase();
+      return appState.items.filter((item) => {
+        if (isDeleted(item) && !appState.showDeleted) return false;
+
+        const store = normalizeStore(item.store);
+        const text = [
+          item.product_name,
+          item.product_name_zh,
+          item.store,
+          item.usage_zh,
+          item.summary_zh,
+          item.platform,
+          item.creator,
+          item.product_code,
+          item.notes,
+        ].join(" ").toLowerCase();
+
+        return (
+          (appState.selectedStore === "all" || store === appState.selectedStore) &&
+          (appState.platform === "all" || item.platform === appState.platform) &&
+          (appState.confidence === "all" || item.confidence === appState.confidence) &&
+          (!keyword || text.includes(keyword))
+        );
+      });
+    }
+
+    function getStoreSummary() {
+      const summary = new Map();
+      appState.items.forEach((item) => {
+        if (isDeleted(item) && !appState.showDeleted) return;
+
+        const store = normalizeStore(item.store);
+        summary.set(store, (summary.get(store) || 0) + 1);
+      });
+      return [...summary.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+    }
+
+    function renderStores() {
+      const total = appState.items.filter((item) => appState.showDeleted || !isDeleted(item)).length;
+      const stores = getStoreSummary();
+      const buttons = [
+        { store: "all", count: total, label: "All Stores" },
+        ...stores.map(([store, count]) => ({ store, count, label: store })),
+      ];
+
+      elements.storeList.innerHTML = "";
+      buttons.forEach((entry) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `storeButton${appState.selectedStore === entry.store ? " active" : ""}`;
+        button.innerHTML = `<span>${escapeHtml(entry.label)}</span><span class="countBadge">${entry.count}</span>`;
+        button.addEventListener("click", () => {
+          appState.selectedStore = entry.store;
+          render();
+        });
+        elements.storeList.appendChild(button);
+      });
+    }
+
+    function renderFilters() {
+      const currentValue = elements.platformFilter.value || "all";
+      const platforms = [...new Set(appState.items.map((item) => item.platform).filter(Boolean))].sort();
+      elements.platformFilter.innerHTML = `<option value="all">All platforms</option>`;
+      platforms.forEach((platform) => {
+        const option = document.createElement("option");
+        option.value = platform;
+        option.textContent = platform;
+        elements.platformFilter.appendChild(option);
+      });
+      elements.platformFilter.value = platforms.includes(currentValue) ? currentValue : "all";
+    }
+
+    function renderStats(items) {
+      const stats = getBoardGroups().map((group) => ({
+        label: group.label,
+        count: items.filter((item) => (item.status || "to_review") === group.id).length,
+      }));
+
+      elements.statsGrid.innerHTML = "";
+      stats.forEach((stat) => {
+        const box = document.createElement("div");
+        box.className = "statBox";
+        box.innerHTML = `<span class="statValue">${stat.count}</span><span class="statLabel">${stat.label}</span>`;
+        elements.statsGrid.appendChild(box);
+      });
+    }
+
+    function renderBoard(items) {
+      elements.board.innerHTML = "";
+      getBoardGroups().forEach((group) => {
+        const columnItems = items.filter((item) => (item.status || "to_review") === group.id);
+        const column = document.createElement("section");
+        column.className = "statusColumn";
+        column.innerHTML = `
+          <div class="columnHeader">
+            <span>${group.label}</span>
+            <span class="countBadge">${columnItems.length}</span>
+          </div>
+          <div class="columnBody"></div>
+        `;
+
+        const body = column.querySelector(".columnBody");
+        if (columnItems.length === 0) {
+          body.innerHTML = `<div class="emptyState">沒有符合條件的商品。</div>`;
+        } else {
+          columnItems.forEach((item) => body.appendChild(createItemCard(item)));
+        }
+
+        elements.board.appendChild(column);
+      });
+    }
+
+    function createItemCard(item) {
+      const card = document.createElement("article");
+      const itemId = item.item_id || item.source_url || item.product_name || crypto.randomUUID();
+      const isExpanded = appState.expandedItems.has(itemId);
+      const positionTag = getItemPositionTag(item);
+      const visibleNotes = getUserNotes(item.notes);
+      card.className = "itemCard";
+      card.dataset.confidence = item.confidence || "medium";
+      const sourceLink = item.source_url
+        ? `<a class="sourceLink" href="${escapeAttribute(item.source_url)}" target="_blank" rel="noreferrer">Source</a>`
+        : `<span class="tag">No source</span>`;
+      const statusOptions = getBoardGroups().map((group) => (
+        `<option value="${group.id}" ${group.id === (item.status || "to_review") ? "selected" : ""}>${group.label}</option>`
+      )).join("");
+
+      card.innerHTML = `
+        <div class="cardTop">
+          <div class="cardMain">
+            <div class="cardTitleRow">
+              <button class="toggleButton" type="button" aria-label="${isExpanded ? "收合商品內容" : "展開商品內容"}" aria-expanded="${isExpanded}">
+                ${isExpanded ? "-" : "+"}
+              </button>
+              <h3 class="productName">${escapeHtml(item.product_name_zh || item.product_name || "Unnamed item")}</h3>
+            </div>
+          </div>
+          <span class="priceTag">${escapeHtml(getPriceText(item))}</span>
+        </div>
+        <div class="metaLine">
+          <span class="tag">${escapeHtml(normalizeStore(item.store))}</span>
+          <span class="tag">${escapeHtml(item.platform || "Unknown")}</span>
+          <span class="tag">${escapeHtml(item.confidence || "medium")}</span>
+          ${positionTag ? `<span class="tag">${escapeHtml(positionTag)}</span>` : ""}
+        </div>
+        <div class="cardDetails" ${isExpanded ? "" : "hidden"}>
+          <p class="usageText">${escapeHtml(item.usage_zh || "尚未整理用途。")}</p>
+          <p class="summaryText">${escapeHtml(item.summary_zh || "")}</p>
+          <div class="metaLine">
+            ${item.product_name ? `<span class="tag">${escapeHtml(item.product_name)}</span>` : ""}
+            ${item.product_code ? `<span class="tag">${escapeHtml(item.product_code)}</span>` : ""}
+            ${item.creator ? `<span class="tag">${escapeHtml(item.creator)}</span>` : ""}
+          </div>
+          <div class="metaLine">
+            ${sourceLink}
+          </div>
+          <div class="noteBox">
+            <label for="notes-${escapeAttribute(itemId)}">Notes</label>
+            <textarea id="notes-${escapeAttribute(itemId)}" data-note-id="${escapeAttribute(itemId)}">${escapeHtml(visibleNotes)}</textarea>
+          </div>
+        </div>
+        <div class="cardFooter">
+          <select class="smallSelect" data-item-id="${escapeAttribute(itemId)}" aria-label="更新狀態">
+            ${statusOptions}
+          </select>
+          <div class="cardActions">
+            <button class="smallButton saveNoteButton" type="button" data-item-id="${escapeAttribute(itemId)}">Save note</button>
+            ${
+              isDeleted(item)
+                ? `<button class="smallButton restoreButton" type="button" data-item-id="${escapeAttribute(itemId)}">Restore</button>`
+                : `<button class="smallButton dangerButton deleteButton" type="button" data-item-id="${escapeAttribute(itemId)}">Delete</button>`
+            }
+          </div>
+        </div>
+      `;
+
+      const toggleButton = card.querySelector(".toggleButton");
+      const statusSelect = card.querySelector("select");
+      const saveNoteButton = card.querySelector(".saveNoteButton");
+      const deleteButton = card.querySelector(".deleteButton");
+      const restoreButton = card.querySelector(".restoreButton");
+      toggleButton.addEventListener("click", () => {
+        if (appState.expandedItems.has(itemId)) {
+          appState.expandedItems.delete(itemId);
+        } else {
+          appState.expandedItems.add(itemId);
+        }
+        render();
+      });
+      statusSelect.addEventListener("change", () => updateStatus(itemId, statusSelect.value));
+      saveNoteButton.addEventListener("click", () => saveNote(itemId, card));
+      if (deleteButton) deleteButton.addEventListener("click", () => softDeleteItem(itemId));
+      if (restoreButton) restoreButton.addEventListener("click", () => restoreItem(itemId));
+      return card;
+    }
+
+    async function updateStatus(itemId, status) {
+      await updateItemFields(itemId, { status });
+    }
+
+    async function saveNote(itemId, card) {
+      const item = appState.items.find((entry) => entry.item_id === itemId);
+      if (!item) return;
+
+      const noteInput = card.querySelector(`[data-note-id="${CSS.escape(itemId)}"]`);
+      const systemNotes = splitNotes(item.notes).system;
+      const nextNotes = mergeNotes(systemNotes, noteInput ? noteInput.value : "");
+      await updateItemFields(itemId, { notes: nextNotes });
+      setSourceStatus("Note saved", "ready");
+    }
+
+    async function softDeleteItem(itemId) {
+      await updateItemFields(itemId, { status: "deleted" });
+      setSourceStatus("Deleted", "ready");
+    }
+
+    async function restoreItem(itemId) {
+      await updateItemFields(itemId, { status: "to_review" });
+      setSourceStatus("Restored", "ready");
+    }
+
+    async function updateItemFields(itemId, fields) {
+      const item = appState.items.find((entry) => entry.item_id === itemId);
+      if (!item) return;
+
+      Object.assign(item, fields, { updated_at: new Date().toISOString() });
+      render();
+
+      if (!API_URL) return;
+
+      await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          action: "update_item",
+          item: {
+            item_id: itemId,
+            ...fields,
+            updated_at: item.updated_at,
+          },
+        }),
+      });
+    }
+
+    async function addUrls() {
+      const urls = extractUrls(elements.urlInput.value);
+      if (urls.length === 0) {
+        setSourceStatus("No URL found", "error");
+        return;
+      }
+
+      if (!API_URL) {
+        const pendingItems = urls.map(createPendingItem);
+        appState.items = [...pendingItems, ...appState.items];
+        elements.urlInput.value = "";
+        appState.demoMode = true;
+        setSourceStatus(`Added ${pendingItems.length} demo URLs`, "ready");
+        render();
+        return;
+      }
+
+      elements.addUrlsButton.disabled = true;
+      setSourceStatus("Adding URLs", "loading");
+
+      try {
+        for (const url of urls) {
+          await fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({
+              action: "upsert_item",
+              item: createPendingItem(url),
+            }),
+          });
+        }
+
+        elements.urlInput.value = "";
+        setSourceStatus(`Added ${urls.length} URLs`, "ready");
+        await loadItems();
+      } catch (error) {
+        setSourceStatus("Add failed", "error");
+      } finally {
+        elements.addUrlsButton.disabled = false;
+      }
+    }
+
+    function renderHeader(items) {
+      const storeName = appState.selectedStore === "all" ? "All Stores" : appState.selectedStore;
+      elements.currentStoreTitle.textContent = storeName;
+      elements.currentStoreSubtitle.textContent = appState.demoMode
+        ? "目前使用 demo data；部署 Apps Script 後，把 API_URL 填入 index.html。"
+        : `目前顯示 ${items.length} 筆商品。`;
+    }
+
+    function render() {
+      const items = getFilteredItems();
+      renderStores();
+      renderFilters();
+      renderHeader(items);
+      renderStats(items);
+      renderBoard(items);
+    }
+
+    elements.refreshButton.addEventListener("click", loadItems);
+    elements.addUrlsButton.addEventListener("click", addUrls);
+    elements.searchInput.addEventListener("input", () => {
+      appState.search = elements.searchInput.value.trim();
+      render();
+    });
+    elements.platformFilter.addEventListener("change", () => {
+      appState.platform = elements.platformFilter.value;
+      render();
+    });
+    elements.confidenceFilter.addEventListener("change", () => {
+      appState.confidence = elements.confidenceFilter.value;
+      render();
+    });
+    elements.showDeletedToggle.addEventListener("change", () => {
+      appState.showDeleted = elements.showDeletedToggle.checked;
+      render();
+    });
+
+    loadItems();
+  </script>
 </body>
 </html>
