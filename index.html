@@ -260,6 +260,46 @@
       text-transform: uppercase;
     }
 
+    .duplicatePanel {
+      display: none;
+      margin-bottom: 16px;
+      border: 2px solid var(--line);
+      border-left: 10px solid var(--red);
+      border-radius: 8px;
+      padding: 12px;
+      background: #ffe5dc;
+    }
+
+    .duplicatePanel.active {
+      display: block;
+    }
+
+    .duplicatePanel h3 {
+      margin-bottom: 8px;
+      font-size: 1rem;
+    }
+
+    .duplicateList {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .duplicateList li {
+      display: grid;
+      gap: 6px;
+      border-top: 1px solid rgba(21, 21, 18, 0.2);
+      padding-top: 8px;
+    }
+
+    .duplicateUrl {
+      color: var(--red);
+      font-weight: 900;
+      overflow-wrap: anywhere;
+    }
+
     .filters {
       display: grid;
       grid-template-columns: minmax(220px, 1fr) 180px 180px auto;
@@ -619,6 +659,11 @@
 
           <div class="statsGrid" id="statsGrid"></div>
 
+          <section class="duplicatePanel" id="duplicatePanel" aria-live="polite">
+            <h3>Duplicate URLs detected</h3>
+            <ul class="duplicateList" id="duplicateList"></ul>
+          </section>
+
           <div class="urlInbox" aria-label="新增待分析 URL">
             <label for="urlInput">
               Add URL inbox
@@ -720,6 +765,8 @@
       currentStoreTitle: document.querySelector("#currentStoreTitle"),
       currentStoreSubtitle: document.querySelector("#currentStoreSubtitle"),
       statsGrid: document.querySelector("#statsGrid"),
+      duplicatePanel: document.querySelector("#duplicatePanel"),
+      duplicateList: document.querySelector("#duplicateList"),
       urlInput: document.querySelector("#urlInput"),
       addUrlsButton: document.querySelector("#addUrlsButton"),
       searchInput: document.querySelector("#searchInput"),
@@ -812,6 +859,21 @@
       return [...systemNotes, String(userNotes || "").trim()]
         .filter(Boolean)
         .join("; ");
+    }
+
+    function getDuplicateGroups() {
+      const groups = new Map();
+      appState.items.forEach((item) => {
+        const sourceUrl = String(item.source_url || "").trim();
+        if (!sourceUrl) return;
+
+        if (!groups.has(sourceUrl)) groups.set(sourceUrl, []);
+        groups.get(sourceUrl).push(item);
+      });
+
+      return [...groups.entries()]
+        .filter(([, items]) => items.length > 1)
+        .sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));
     }
 
     function extractUrls(value) {
@@ -974,6 +1036,31 @@
         box.className = "statBox";
         box.innerHTML = `<span class="statValue">${stat.count}</span><span class="statLabel">${stat.label}</span>`;
         elements.statsGrid.appendChild(box);
+      });
+    }
+
+    function renderDuplicateWarning() {
+      const duplicates = getDuplicateGroups();
+      elements.duplicatePanel.classList.toggle("active", duplicates.length > 0);
+      elements.duplicateList.innerHTML = "";
+
+      duplicates.forEach(([sourceUrl, items]) => {
+        const row = document.createElement("li");
+        const itemSummary = items
+          .map((item) => {
+            const label = item.product_name_zh || item.product_name || "Unnamed item";
+            return `<span class="tag">${escapeHtml(item.status || "to_review")} / ${escapeHtml(label)} / ${escapeHtml(item.item_id || "")}</span>`;
+          })
+          .join("");
+
+        row.innerHTML = `
+          <span class="duplicateUrl">${escapeHtml(sourceUrl)}</span>
+          <div class="metaLine">
+            <span class="tag">${items.length} rows</span>
+            ${itemSummary}
+          </div>
+        `;
+        elements.duplicateList.appendChild(row);
       });
     }
 
@@ -1190,6 +1277,7 @@
       renderFilters();
       renderHeader(items);
       renderStats(items);
+      renderDuplicateWarning();
       renderBoard(items);
     }
 

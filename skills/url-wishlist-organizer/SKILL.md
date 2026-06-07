@@ -109,27 +109,35 @@ Follow this order:
    - Fetch Sheet rows through Apps Script.
    - Pending rows usually have `notes = pending_url_review`, `product_name_zh = 待分析`, or placeholder product fields.
 
-2. **Extract public metadata**
+2. **Check duplicate source URLs before writing**
+   - Group all rows by `source_url`.
+   - If any pending URL already appears in another row, stop before writing changes for that URL.
+   - Report the duplicate group to the user with `source_url`, `item_id`, `status`, `product_name_zh`, and `notes`.
+   - Do not overwrite rows with user-managed statuses such as `want`, `bought`, `skipped`, or `deleted`.
+   - Do not clean duplicate pending rows automatically. Ask the user what to do.
+   - The dashboard may show duplicate warnings without changing Sheet data; treat that as the preferred first step.
+
+3. **Extract public metadata**
    - Prefer `yt-dlp --skip-download --dump-json --no-playlist URL`.
    - This should not download the video.
    - Use title, description, uploader, channel, duration, webpage URL, hashtags, JAN/product codes.
 
-3. **Use subtitles when available**
+4. **Use subtitles when available**
    - Use subtitles/transcripts only if available.
    - Facebook and Instagram often do not provide useful subtitles.
 
-4. **Search suspected product names**
+5. **Search suspected product names**
    - If there is a suspected product name but unclear usage, search the web for the exact product.
    - Prefer official product pages, manufacturer pages, reputable seller pages, or clear product listings.
    - Add found URLs into `notes`, for example:
      - `found_url: https://...`
      - `seller_url: https://...`
 
-5. **Escalate to video/audio analysis only when needed**
+6. **Escalate to video/audio analysis only when needed**
    - If metadata, subtitles, and search are not enough, explain that video/audio/frame analysis may require downloading or temporary files.
    - Ask the user before producing local media files.
 
-6. **Mark unresolved items**
+7. **Mark unresolved items**
    - If information is still insufficient, keep a row with low confidence:
      - `confidence = low`
      - `notes` includes `needs_manual_check`
@@ -235,6 +243,8 @@ Always read back after writing and report the rows updated.
 Before final response:
 
 - Pending URLs were identified or user-provided URLs were listed.
+- Duplicate `source_url` groups were checked before any writes.
+- If duplicates existed, they were reported and not overwritten unless the user explicitly confirmed the action.
 - Public metadata was attempted first.
 - Product-page search was used when suspected names had unclear usage.
 - Multi-product URLs were split into separate rows.
